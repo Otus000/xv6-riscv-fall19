@@ -14,25 +14,29 @@ int main()
     int rc = fork();
     if (rc < 0) {
         printf("\n fork failed");
+        exit();
     }
     else if (rc == 0){
+        close(parent_fd[1]);
+        close(child_fd[0]);
         if (read(parent_fd[0], buf, sizeof buf)) {
-            write(child_fd[1], "pong\n", 5);
-            printf("received ");
-            printf(buf);
             close(parent_fd[0]);
+            write(child_fd[1], "pong\n", 5);
+            close(child_fd[1]);
+            printf("%d: received ", getpid());
+            printf(buf);
         }
     }
     else {
+        close(child_fd[1]);
+        close(parent_fd[0]);
         write(parent_fd[1], "ping\n", 5);
+        close(parent_fd[1]);
         if (read(child_fd[0], buf, sizeof buf)) {
-            printf("received ");
+            printf("%d: received ", getpid());
             printf(buf);
-            close(parent_fd[1]);
-            close(parent_fd[0]);
-            close(child_fd[1]);
+            close(child_fd[0]);
         }
     }
     exit();
-
 }
