@@ -23,7 +23,7 @@ int main()
             close(parent_fd[0]);
             write(child_fd[1], "pong\n", 5);
             close(child_fd[1]);
-            printf("received ");
+            printf("%d: received ", getpid());
             printf(buf);
         }
     }
@@ -33,7 +33,7 @@ int main()
         write(parent_fd[1], "ping\n", 5);
         close(parent_fd[1]);
         if (read(child_fd[0], buf, sizeof buf)) {
-            printf("received ");
+            printf("%d: received ", getpid());
             printf(buf);
             close(child_fd[0]);
         }
