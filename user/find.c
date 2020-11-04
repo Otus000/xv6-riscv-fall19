@@ -41,13 +41,6 @@ find(char *path, char *name) {
   if (strcmp(name, fmtname(path)) == 0) {
       printf("%s\n", path);
   }
-  // switch (st.type) {
-    // case T_FILE:
-    //     // printf("name ##%s##\n", name);
-    //     // printf("path ##%s##\n", fmtname(path));
-    //     // printf("no match\n");
-    //     break;
-    // case T_DIR:
 
   //在dir中查找
   if (st.type == T_DIR) {

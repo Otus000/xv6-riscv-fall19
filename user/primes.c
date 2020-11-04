@@ -5,8 +5,8 @@
 
 int main()
 {
-    char buf_now[64];
-    char buf_next[64];
+    char buf_now[64];   //接受的数组
+    char buf_next[64];  //传给子进程的数组
     int i = 0;
     int j = 0;
     int num = 34;
@@ -20,11 +20,11 @@ int main()
         exit();
     }
     else if (rc > 0) {
+        //主进程进行初始化
         for (i = 0; i < num; i++) {
             buf_now[i] = i + 2;
             // printf("%d ", buf_now[i]);
         }
-        
         close(fd[0]);
         write(fd[1], buf_now, num);
         close(fd[1]);
@@ -32,6 +32,7 @@ int main()
     } 
     else {
         while (rc == 0) {
+            //当前子进程筛选后传给下一个子进程
             close(fd[1]);
             num = read(fd[0], buf_now, sizeof buf_now);
             // printf("\n\npid%d received ", getpid());
@@ -52,8 +53,8 @@ int main()
             pipe(fd);
             write(fd[1], buf_next, num);
             rc = fork();
-            wait();
         }
+        wait();
     }
     exit();
 }
