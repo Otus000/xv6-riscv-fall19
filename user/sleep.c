@@ -6,20 +6,20 @@
 int main(int argc, char **argv) 
 {
     if (argc < 2){
-        printf("\nSleep needs two arguments\n\n");
+        printf("Sleep needs two arguments\n");
         exit();
     } else if (argc > 2)
     {
-        printf("\nToo many arguments\n");
-        printf("\nSleep needs two arguments\n\n");
+        printf("Too many arguments\n");
+        printf("Sleep needs two arguments\n");
         exit();
     }
 
     char *c = argv[1];
     while (*c != '\0') {
         if (*c < '0' || *c > '9') {
-            printf("\nInvalid input\n");
-            printf("\nPlease input numbers\n\n");
+            printf("Invalid input\n");
+            printf("Please input numbers\n");
             exit();
         }
         c++;
