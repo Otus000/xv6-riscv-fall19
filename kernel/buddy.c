@@ -56,6 +56,13 @@ void bit_clear(char *array, int index) {
   array[index/8] = (b & ~m);
 }
 
+// Reverse bit at position index in array
+void bit_reverse(char *array, int index) {
+  if(bit_isset(array, index))
+    bit_clear(array, index); 
+  else 
+    bit_set(array, index);
+}
 // Print a bit vector as a list of ranges of 1 bits
 void
 bd_print_vector(char *vector, int len) {
@@ -139,17 +146,16 @@ bd_malloc(uint64 nbytes)
 
   // Found a block; pop it and potentially split it.
   char *p = lst_pop(&bd_sizes[k].free);
-  bit_set(bd_sizes[k].alloc, blk_index(k, p));
+  bit_reverse(bd_sizes[k].alloc, blk_index(k, p) / 2);
   for(; k > fk; k--) {
     // split a block at size k and mark one half allocated at size k-1
     // and put the buddy on the free list at size k-1
     char *q = p + BLK_SIZE(k-1);   // p's buddy
     bit_set(bd_sizes[k].split, blk_index(k, p));
-    bit_set(bd_sizes[k-1].alloc, blk_index(k-1, p));
+    bit_reverse(bd_sizes[k-1].alloc, blk_index(k-1, p) / 2);
     lst_push(&bd_sizes[k-1].free, q);
   }
   release(&lock);
-
   return p;
 }
 
@@ -175,8 +181,8 @@ bd_free(void *p) {
   for (k = size(p); k < MAXSIZE; k++) {
     int bi = blk_index(k, p);
     int buddy = (bi % 2 == 0) ? bi+1 : bi-1;
-    bit_clear(bd_sizes[k].alloc, bi);  // free p at size k
-    if (bit_isset(bd_sizes[k].alloc, buddy)) {  // is buddy allocated?
+    bit_reverse(bd_sizes[k].alloc, bi / 2);  // free p at size k
+    if (bit_isset(bd_sizes[k].alloc, bi / 2)) {  // is buddy allocated?
       break;   // break out of loop
     }
     // budy is free; merge with buddy
@@ -225,11 +231,10 @@ bd_mark(void *start, void *stop)
     bi = blk_index(k, start);
     bj = blk_index_next(k, stop);
     for(; bi < bj; bi++) {
-      if(k > 0) {
-        // if a block is allocated at size k, mark it as split too.
+      if (k > 0)
         bit_set(bd_sizes[k].split, bi);
-      }
-      bit_set(bd_sizes[k].alloc, bi);
+      // 两兄弟bi，bi+1 共用第bi/2位记录是否被分配
+      bit_reverse(bd_sizes[k].alloc, bi / 2);
     }
   }
 }
@@ -261,10 +266,16 @@ bd_initfree(void *bd_left, void *bd_right) {
   for (int k = 0; k < MAXSIZE; k++) {   // skip max size
     int left = blk_index_next(k, bd_left);
     int right = blk_index(k, bd_right);
-    free += bd_initfree_pair(k, left);
+    if (bit_isset(bd_sizes[k].alloc, left / 2)) {
+      lst_push(&bd_sizes[k].free, addr(k, left));
+      free += BLK_SIZE(k);
+    }
     if(right <= left)
       continue;
-    free += bd_initfree_pair(k, right);
+    if (bit_isset(bd_sizes[k].alloc, right / 2)) {
+      lst_push(&bd_sizes[k].free, addr(k, right - 1));
+      free += BLK_SIZE(k);
+    }
   }
   return free;
 }
@@ -317,7 +328,7 @@ bd_init(void *base, void *end) {
   // initialize free list and allocate the alloc array for each size k
   for (int k = 0; k < nsizes; k++) {
     lst_init(&bd_sizes[k].free);
-    sz = sizeof(char)* ROUNDUP(NBLK(k), 8)/8;
+    sz = sizeof(char)* ROUNDUP(NBLK(k) / 2, 8)/8; // alloc分配原来一半的空间
     bd_sizes[k].alloc = p;
     memset(bd_sizes[k].alloc, 0, sz);
     p += sz;
